@@ -1,0 +1,14 @@
+{
+  "name": "traffic-pinger",
+  "version": "1.0.0",
+  "description": "A simple traffic pinger for Render apps",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "node-fetch": "^3.3.2"
+  }
+}

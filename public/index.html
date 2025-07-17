@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Traffic Pinger Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <h1>🚀 Traffic Pinger Dashboard</h1>
+      <p class="subtitle">Real-time monitoring of Render applications with automated health checks every 5 minutes</p>
+      <div class="stats">
+        <div class="stat-item">
+          <span class="stat-number" id="total-services">0</span>
+          <span class="stat-label">Services</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-number" id="online-services">0</span>
+          <span class="stat-label">Online</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-number" id="offline-services">0</span>
+          <span class="stat-label">Offline</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="controls">
+      <button id="refresh-btn" class="btn btn-primary">
+        <span class="btn-icon">🔄</span>
+        Refresh Now
+      </button>
+      <div class="last-update">
+        Last updated: <span id="last-update-time">Never</span>
+      </div>
+    </div>
+
+    <div class="services-grid" id="status">
+      <div class="loading">
+        <div class="spinner"></div>
+        <p>Loading services...</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let lastUpdateTime = null;
+
+    function updateStats(data) {
+      const total = data.length;
+      const online = data.filter(entry => entry.status.includes('✅')).length;
+      const offline = total - online;
+
+      document.getElementById('total-services').textContent = total;
+      document.getElementById('online-services').textContent = online;
+      document.getElementById('offline-services').textContent = offline;
+    }
+
+    function getStatusClass(status) {
+      if (status.includes('✅')) return 'online';
+      if (status.includes('❌')) return 'offline';
+      return 'unknown';
+    }
+
+    function formatUrl(url) {
+      try {
+        const urlObj = new URL(url);
+        return urlObj.hostname;
+      } catch {
+        return url;
+      }
+    }
+
+    function timeAgo(timeString) {
+      if (timeString === 'N/A') return 'Never';
+      
+      const now = new Date();
+      const time = new Date(timeString);
+      const diffMs = now - time;
+      const diffMins = Math.floor(diffMs / 60000);
+      
+      if (diffMins < 1) return 'Just now';
+      if (diffMins < 60) return `${diffMins}m ago`;
+      
+      const diffHours = Math.floor(diffMins / 60);
+      if (diffHours < 24) return `${diffHours}h ago`;
+      
+      return time.toLocaleDateString();
+    }
+
+    async function loadStatus() {
+      try {
+        const res = await fetch('/status');
+        const data = await res.json();
+        const container = document.getElementById('status');
+        
+        container.innerHTML = '';
+        
+        data.forEach(entry => {
+          const statusClass = getStatusClass(entry.status);
+          const hostname = formatUrl(entry.url);
+          const timeAgoText = timeAgo(entry.time);
+          
+          const card = document.createElement('div');
+          card.className = `service-card ${statusClass}`;
+          card.innerHTML = `
+            <div class="service-header">
+              <div class="service-name">${hostname}</div>
+              <div class="status-badge ${statusClass}">
+                <span class="status-dot"></span>
+                ${statusClass.charAt(0).toUpperCase() + statusClass.slice(1)}
+              </div>
+            </div>
+            <div class="service-details">
+              <div class="service-url">${entry.url}</div>
+              <div class="service-status">${entry.status}</div>
+            </div>
+            <div class="service-footer">
+              <div class="last-ping">
+                <span class="icon">🕐</span>
+                Last ping: ${timeAgoText}
+              </div>
+            </div>
+          `;
+          container.appendChild(card);
+        });
+
+        updateStats(data);
+        lastUpdateTime = new Date();
+        document.getElementById('last-update-time').textContent = lastUpdateTime.toLocaleTimeString();
+        
+      } catch (error) {
+        console.error('Failed to load status:', error);
+        document.getElementById('status').innerHTML = `
+          <div class="error-message">
+            <span class="error-icon">⚠️</span>
+            <h3>Failed to load services</h3>
+            <p>Please try refreshing the page</p>
+          </div>
+        `;
+      }
+    }
+
+    // Event listeners
+    document.getElementById('refresh-btn').addEventListener('click', () => {
+      const btn = document.getElementById('refresh-btn');
+      btn.classList.add('loading');
+      loadStatus().finally(() => {
+        btn.classList.remove('loading');
+      });
+    });
+
+    // Initial load and auto-refresh
+    loadStatus();
+    setInterval(loadStatus, 60 * 1000); // Refresh every minute
+  </script>
+</body>
+</html>
