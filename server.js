@@ -11,9 +11,12 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const urlsToPing = [
-  "https://traffic-vtpd.onrender.com/",
   "https://traffic-44o7.onrender.com/",
-  "https://traffic-tmsl.onrender.com/"
+  "https://traffic-tmsl.onrender.com/",
+  "https://traffic-e1fj.onrender.com",
+  "https://traffic-j9e2.onrender.com",
+  "https://traffic-ci12.onrender.com",
+  "https://traffic-q37l.onrender.com"
 ];
 
 let pingStatus = urlsToPing.map(url => ({
